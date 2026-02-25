@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>おまえシリーズクイズ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #f4f6fb;
+      --surface: #ffffff;
+      --surface2: #eef1f8;
+      --accent: #d63a5a;
+      --accent2: #3b5bdb;
+      --text: #1a1a2e;
+      --text-muted: #6b7280;
+      --correct: #16a34a;
+      --incorrect: #dc2626;
+      --correct-bg: #dcfce7;
+      --incorrect-bg: #fee2e2;
+      --border: #dde1ea;
+      --input-bg: #f8f9fc;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, #d63a5a, #3b5bdb);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p {
+      margin-top: 8px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    #score-bar {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    .score-item {
+      text-align: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 20px;
+      min-width: 90px;
+    }
+
+    .score-item .label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .score-item .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .score-item .value.correct-color { color: var(--correct); }
+    .score-item .value.incorrect-color { color: var(--incorrect); }
+
+    #quiz-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 4px 24px rgba(60,80,180,0.10);
+    }
+
+    #question-number {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      margin-bottom: 12px;
+    }
+
+    #question-text {
+      font-size: clamp(1.1rem, 4vw, 1.5rem);
+      font-weight: 700;
+      line-height: 1.6;
+      color: var(--text);
+      padding: 16px 20px;
+      background: var(--surface2);
+      border-radius: 12px;
+      border-left: 4px solid var(--accent);
+      margin-bottom: 28px;
+      word-break: break-all;
+    }
+
+    #prompt-label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      letter-spacing: 0.05em;
+    }
+
+    #answer-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #answer-row .fixed-text {
+      font-size: clamp(1rem, 3.5vw, 1.2rem);
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    #answer-input {
+      flex: 1;
+      min-width: 0;
+      background: var(--input-bg);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: clamp(1rem, 3.5vw, 1.2rem);
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #answer-input:focus {
+      border-color: var(--accent);
+    }
+
+    #answer-input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #submit-btn, #next-btn {
+      display: block;
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      letter-spacing: 0.05em;
+    }
+
+    #submit-btn {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    #submit-btn:hover { opacity: 0.88; }
+    #submit-btn:active { transform: scale(0.98); }
+    #submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    #next-btn {
+      background: var(--accent2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    #next-btn:hover { opacity: 0.85; }
+    #next-btn:active { transform: scale(0.98); }
+
+    #result-area {
+      margin-top: 20px;
+      padding: 18px 20px;
+      border-radius: 14px;
+      display: none;
+    }
+
+    #result-area.correct {
+      background: var(--correct-bg);
+      border: 1px solid var(--correct);
+      display: block;
+    }
+
+    #result-area.incorrect {
+      background: var(--incorrect-bg);
+      border: 1px solid var(--incorrect);
+      display: block;
+    }
+
+    #result-icon {
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+    }
+
+    #result-label {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .result-area.correct #result-label { color: var(--correct); }
+    .result-area.incorrect #result-label { color: var(--incorrect); }
+
+    #result-details {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.8;
+    }
+
+    #result-details .highlight {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    #result-details .answer-display {
+      font-size: 1rem;
+      color: var(--correct);
+      font-weight: 700;
+      display: block;
+      margin-top: 6px;
+      padding: 8px 12px;
+      background: rgba(34,197,94,0.08);
+      border-radius: 8px;
+    }
+
+    #loading, #error {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 60px 20px;
+      font-size: 1rem;
+    }
+
+    #error { color: var(--incorrect); }
+
+    .spinner {
+      display: inline-block;
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    @media (max-width: 480px) {
+      #quiz-card { padding: 24px 18px; }
+      #answer-row { flex-direction: column; align-items: stretch; }
+      #answer-row .fixed-text { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>おまえシリーズクイズ</h1>
+    <p>「俺は〜だけど」の〜をひらがなで答えよう</p>
+  </header>
+
+  <div id="score-bar">
+    <div class="score-item">
+      <div class="label">正解</div>
+      <div class="value correct-color" id="score-correct">0</div>
+    </div>
+    <div class="score-item">
+      <div class="label">不正解</div>
+      <div class="value incorrect-color" id="score-incorrect">0</div>
+    </div>
+    <div class="score-item">
+      <div class="label">出題数</div>
+      <div class="value" id="score-total">0</div>
+    </div>
+  </div>
+
+  <div id="quiz-card">
+    <div id="loading">
+      <div class="spinner"></div>
+      <div>問題を読み込み中...</div>
+    </div>
+    <div id="error" style="display:none;"></div>
+
+    <div id="quiz-content" style="display:none;">
+      <div id="question-number"></div>
+      <div id="question-text"></div>
+
+      <div id="prompt-label">「俺は〜だけど」の〜の部分をひらがなで入力してください</div>
+
+      <div id="answer-row">
+        <span class="fixed-text">俺は</span>
+        <input
+          type="text"
+          id="answer-input"
+          placeholder="ひらがなで入力…"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        >
+        <span class="fixed-text">だけど</span>
+      </div>
+
+      <button id="submit-btn">回答する</button>
+
+      <div id="result-area">
+        <div id="result-icon"></div>
+        <div id="result-label"></div>
+        <div id="result-details"></div>
+      </div>
+
+      <button id="next-btn" style="display:none;">次の問題へ →</button>
+    </div>
+  </div>
+
+  <footer>データ: qa.csv　|　GitHub Pages 静的 SPA</footer>
+
+  <script>
+    // ── CSV パーサー（クォート対応）─────────────────────────
+    function parseCSV(text) {
+      const rows = [];
+      let i = 0;
+      while (i < text.length) {
+        const row = [];
+        while (i < text.length) {
+          if (text[i] === '"') {
+            // quoted field
+            i++;
+            let field = '';
+            while (i < text.length) {
+              if (text[i] === '"') {
+                if (text[i + 1] === '"') { field += '"'; i += 2; }
+                else { i++; break; }
+              } else {
+                field += text[i++];
+              }
+            }
+            row.push(field);
+          } else {
+            let field = '';
+            while (i < text.length && text[i] !== ',' && text[i] !== '\n' && text[i] !== '\r') {
+              field += text[i++];
+            }
+            row.push(field.trim());
+          }
+          if (i < text.length && text[i] === ',') { i++; continue; }
+          break;
+        }
+        // skip CRLF / LF
+        if (i < text.length && text[i] === '\r') i++;
+        if (i < text.length && text[i] === '\n') i++;
+
+        if (row.length >= 5 && row[0] !== '' && row[0] !== '本文') {
+          rows.push(row);
+        }
+      }
+      return rows;
+    }
+
+    // ── 重複排除（6列目 URL をキーにする、なければ1列目）─────
+    function deduplicate(rows) {
+      const seen = new Set();
+      return rows.filter(r => {
+        const key = r[5] || r[0];
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    // ── ひらがな正規化（長音・大文字小文字・全角スペース等）──
+    function normalize(str) {
+      return str
+        .trim()
+        .replace(/\s+/g, '')
+        // 全角スペース除去
+        .replace(/　/g, '')
+        // カタカナ→ひらがな（念のため）
+        .replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+    }
+
+    // ── 状態管理 ─────────────────────────────────────────────
+    let questions = [];
+    let currentQuestion = null;
+    let scores = { correct: 0, incorrect: 0, total: 0 };
+    let answered = false;
+
+    const elLoading    = document.getElementById('loading');
+    const elError      = document.getElementById('error');
+    const elContent    = document.getElementById('quiz-content');
+    const elQNum       = document.getElementById('question-number');
+    const elQText      = document.getElementById('question-text');
+    const elInput      = document.getElementById('answer-input');
+    const elSubmit     = document.getElementById('submit-btn');
+    const elResult     = document.getElementById('result-area');
+    const elResultIcon = document.getElementById('result-icon');
+    const elResultLbl  = document.getElementById('result-label');
+    const elResultDet  = document.getElementById('result-details');
+    const elNext       = document.getElementById('next-btn');
+    const elScoreC     = document.getElementById('score-correct');
+    const elScoreI     = document.getElementById('score-incorrect');
+    const elScoreT     = document.getElementById('score-total');
+
+    function updateScoreUI() {
+      elScoreC.textContent = scores.correct;
+      elScoreI.textContent = scores.incorrect;
+      elScoreT.textContent = scores.total;
+    }
+
+    function pickRandom() {
+      return questions[Math.floor(Math.random() * questions.length)];
+    }
+
+    function showQuestion(q) {
+      currentQuestion = q;
+      answered = false;
+
+      elQNum.textContent = `第 ${scores.total + 1} 問`;
+      elQText.textContent = q[1]; // 2列目：「おまえ～なんだ」
+
+      elInput.value = '';
+      elInput.disabled = false;
+      elInput.focus();
+
+      elSubmit.disabled = false;
+      elSubmit.style.display = 'block';
+
+      elResult.className = '';
+      elResult.style.display = 'none';
+      elNext.style.display = 'none';
+    }
+
+    function submitAnswer() {
+      if (answered || !currentQuestion) return;
+      answered = true;
+
+      const userAnswer = normalize(elInput.value);
+      const correctAnswer = normalize(currentQuestion[4]); // 5列目
+
+      if (!userAnswer) {
+        // 空欄の場合は回答なし扱い
+        elInput.focus();
+        answered = false;
+        return;
+      }
+
+      const isCorrect = userAnswer === correctAnswer;
+
+      scores.total++;
+      if (isCorrect) scores.correct++;
+      else scores.incorrect++;
+      updateScoreUI();
+
+      elInput.disabled = true;
+      elSubmit.disabled = true;
+
+      elResult.className = isCorrect ? 'correct' : 'incorrect';
+      elResult.style.display = 'block';
+
+      if (isCorrect) {
+        elResultIcon.textContent = '🎉';
+        elResultLbl.style.color = 'var(--correct)';
+        elResultLbl.textContent = '正解！';
+        elResultDet.innerHTML =
+          `<span class="highlight">${escHtml(currentQuestion[2])}</span>`;
+      } else {
+        elResultIcon.textContent = '😢';
+        elResultLbl.style.color = 'var(--incorrect)';
+        elResultLbl.textContent = '不正解…';
+        elResultDet.innerHTML =
+          `あなたの回答：<span class="highlight">${escHtml(userAnswer)}</span>` +
+          `<span class="answer-display">正解：${escHtml(currentQuestion[4])}</span>` +
+          `<span style="margin-top:6px;display:block;">${escHtml(currentQuestion[2])}</span>`;
+      }
+
+      elNext.style.display = 'block';
+    }
+
+    function escHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── イベントリスナー ──────────────────────────────────────
+    elSubmit.addEventListener('click', submitAnswer);
+
+    elInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitAnswer();
+    });
+
+    elNext.addEventListener('click', () => {
+      showQuestion(pickRandom());
+    });
+
+    // ── CSV 読み込み & 初期化 ─────────────────────────────────
+    async function init() {
+      try {
+        const resp = await fetch('qa.csv');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const text = await resp.text();
+        const rows = parseCSV(text);
+        questions = deduplicate(rows);
+
+        if (questions.length === 0) throw new Error('問題データが見つかりませんでした。');
+
+        elLoading.style.display = 'none';
+        elContent.style.display = 'block';
+        showQuestion(pickRandom());
+      } catch (err) {
+        elLoading.style.display = 'none';
+        elError.style.display = 'block';
+        elError.textContent = `エラー: ${err.message}`;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
